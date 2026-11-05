@@ -13,13 +13,13 @@ Application Java (Maven) qui expose un **service web SOAP** de calculatrice avec
 1. [Présentation du projet](#1-présentation-du-projet)
 2. [Architecture d'un service web SOAP](#2-architecture-dun-service-web-soap)
 3. [Exemple détaillé : l'opération `somme`](#3-exemple-détaillé--lopération-somme)
-4. [Structure d'un message SOAP](#3-structure-dun-message-soap)
-5. [Structure du contrat WSDL](#4-structure-du-contrat-wsdl)
-6. [Structure du projet et diagramme de classes](#5-structure-du-projet-et-diagramme-de-classes)
-7. [Implémentation](#6-implémentation)
-8. [Publication du service et WSDL](#7-publication-du-service-et-wsdl)
-9. [Tests avec SoapUI](#8-tests-avec-soapui)
-10. [Récapitulatif des résultats](#9-récapitulatif-des-résultats)
+4. [Structure d'un message SOAP](#4-structure-dun-message-soap)
+5. [Structure du contrat WSDL](#5-structure-du-contrat-wsdl)
+6. [Structure du projet et diagramme de classes](#6-structure-du-projet-et-diagramme-de-classes)
+7. [Implémentation](#7-implémentation)
+8. [Publication du service et WSDL](#8-publication-du-service-et-wsdl)
+9. [Tests avec SoapUI](#9-tests-fonctionnels-avec-soapui)
+10. [Récapitulatif des résultats](#10-récapitulatif-des-résultats)
 11. [Évolution du projet](#11-évolution-du-projet)
 12. [Conclusion](#12-conclusion)
 
@@ -44,7 +44,7 @@ Ce TP permet ainsi de mettre en pratique les concepts fondamentaux de l'architec
 
 ---
 
-## 1. Architecture d'un service web SOAP
+## 2. Architecture d'un service web SOAP
 
 Trois acteurs participent à un service web : le **serveur** (producteur), l'**annuaire** UDDI (registre des contrats WSDL) et le **client** (consommateur, ici SoapUI).
 
