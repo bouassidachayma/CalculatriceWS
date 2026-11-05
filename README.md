@@ -109,7 +109,35 @@ CalculatriceWS/
 
 Cette organisation permet de distinguer la définition des fonctionnalités, leur implémentation et leur mise à disposition aux clients.
 
+---
 
+### Relations entre les classes
+
+```mermaid
+classDiagram
+    class ICalculatrice {
+        <<interface>>
+        +somme(double a, double b) double
+        +multiplication(double a, double b) double
+        +soustraction(double a, double b) double
+        +division(double a, double b) double
+    }
+    class Calculatrice {
+        +somme(double a, double b) double
+        +multiplication(double a, double b) double
+        +soustraction(double a, double b) double
+        +division(double a, double b) double
+    }
+    class ServeurJWS {
+        +main(String[] args) void
+    }
+    Calculatrice ..|> ICalculatrice : implémente
+    ServeurJWS ..> Calculatrice : publie
+```
+
+Cette organisation permet de distinguer la définition des fonctionnalités, leur implémentation et leur mise à disposition aux clients.
+
+---
 ---
 
 ## 4. Dépendances Maven
