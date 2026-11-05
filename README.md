@@ -1,11 +1,27 @@
 # CalculatriceWS — Développement d'un Service Web SOAP avec Java
 
 > **TP2 : Mise en œuvre de Jakarta XML Web Services**
-> **Matière :** Architecture SOA et Services Web
-> **Filière :** LSI3-GLSI
-> **Établissement :** Faculté des Sciences de Sfax
-> **Année universitaire :** 2025-2026
-> **Réalisé par :** Chayma Bouassida
+> Matière : Architecture SOA et services web — Filière : LSI3-GLSI
+> Faculté des Sciences de Sfax — Année universitaire 2026-2027
+> Réalisé par : **Chayma Bouassida**
+
+Application Java (Maven) qui expose un **service web SOAP** de calculatrice avec quatre opérations : `somme`, `multiplication`, `soustraction` et `division`. Le service est publié avec `Endpoint.publish(...)`, puis testé avec **SoapUI**.
+
+---
+
+## Sommaire
+1. [Présentation du projet](#1-présentation-du-projet)
+2. [Architecture d'un service web SOAP](#2-architecture-dun-service-web-soap)
+3. [Exemple détaillé : l'opération `somme`](#3-exemple-détaillé--lopération-somme)
+4. [Structure d'un message SOAP](#3-structure-dun-message-soap)
+5. [Structure du contrat WSDL](#4-structure-du-contrat-wsdl)
+6. [Structure du projet et diagramme de classes](#5-structure-du-projet-et-diagramme-de-classes)
+7. [Implémentation](#6-implémentation)
+8. [Publication du service et WSDL](#7-publication-du-service-et-wsdl)
+9. [Tests avec SoapUI](#8-tests-avec-soapui)
+10. [Récapitulatif des résultats](#9-récapitulatif-des-résultats)
+11. [Évolution du projet](#11-évolution-du-projet)
+12. [Conclusion](#12-conclusion)
 
 ---
 
@@ -26,77 +42,88 @@ Le service est publié à l'aide de la méthode `Endpoint.publish()`. Son contra
 
 Ce TP permet ainsi de mettre en pratique les concepts fondamentaux de l'architecture orientée services (SOA) et de la communication entre applications distribuées.
 
-## 2. Architecture SOAP : cycle de vie d'un service Web
+---
 
-### 2.1 Principe général
+## 1. Architecture d'un service web SOAP
 
-Le cycle de vie d'un service Web SOAP repose sur trois acteurs principaux :
+Trois acteurs participent à un service web : le **serveur** (producteur), l'**annuaire** UDDI (registre des contrats WSDL) et le **client** (consommateur, ici SoapUI).
 
-* **Serveur (producteur)** : développe et publie le service Web.
-* **Annuaire (UDDI)** : permet théoriquement la publication et la découverte des services Web.
-* **Client (consommateur)** : recherche le service, récupère son contrat WSDL et invoque ses opérations.
+![Schéma du tableau : cycle de vie d'un service Web SOAP](docs/images/00-tableau-cycle-de-vie.png)
 
-### 2.2 Schéma du cycle de vie
 
-Le schéma suivant représente les principales étapes de communication entre le serveur, l'annuaire et le client.
-
-```mermaid
-sequenceDiagram
-    participant S as Serveur<br/>(Producteur)
-    participant A as Annuaire<br/>(UDDI)
-    participant C as Client<br/>(SoapUI)
-
-    S->>A: ① Publication du service et du contrat WSDL
-    C->>A: ② Interrogation de l'annuaire
-    A-->>C: ③ Informations du service et contrat WSDL
-    C->>S: ④ Requête HTTP contenant un message SOAP
-    S-->>C: ⑤ Réponse HTTP contenant le résultat SOAP
-```
-
-### 2.3 Description des étapes
+### Description des étapes
 
 | Étape           | Acteurs            | Description                                                                            |
 | --------------- | ------------------ | -------------------------------------------------------------------------------------- |
-| ① Publication   | Serveur → Annuaire | Le producteur publie le service Web et son contrat WSDL.                               |
-| ② Interrogation | Client → Annuaire  | Le client recherche un service correspondant à son besoin.                             |
-| ③ Découverte    | Annuaire → Client  | L'annuaire retourne les informations permettant d'utiliser le service.                 |
-| ④ Invocation    | Client → Serveur   | Le client envoie une requête HTTP contenant une enveloppe SOAP.                        |
-| ⑤ Réponse       | Serveur → Client   | Le serveur retourne une réponse HTTP contenant le résultat sous forme de message SOAP. |
+| 1. Publication   | Serveur → Annuaire | Le producteur publie le service Web et son contrat WSDL.                               |
+| 2. Interrogation | Client → Annuaire  | Le client recherche un service correspondant à son besoin.                             |
+| 3. Découverte    | Annuaire → Client  | L'annuaire retourne les informations permettant d'utiliser le service.                 |
+| 4. Invocation    | Client → Serveur   | Le client envoie une requête HTTP contenant une enveloppe SOAP.                        |
+| 5. Réponse       | Serveur → Client   | Le serveur retourne une réponse HTTP contenant le résultat sous forme de message SOAP. |
 
-> **Application au TP :** l'annuaire UDDI n'est pas utilisé directement. SoapUI importe le WSDL à partir de l'URL du service, puis invoque les opérations SOAP.
 
-### 2.4 Structure du contrat WSDL
+### Cycle de vie du service
 
-Le fichier WSDL décrit le contrat du service Web. Il permet au client de connaître les opérations disponibles, les paramètres attendus et l'adresse du service.
+![Cycle de vie d'un service web](docs/images/06-cycle-de-vie-service-web.png)
 
-| Élément WSDL  | Type     | Rôle                                                                |
-| ------------- | -------- | ------------------------------------------------------------------- |
-| `definitions` | Racine   | Déclare le contrat et les espaces de noms.                          |
-| `types`       | Abstrait | Définit les types de données échangés à l'aide de XML Schema (XSD). |
-| `message`     | Abstrait | Décrit les messages d'entrée et de sortie.                          |
-| `portType`    | Abstrait | Définit les opérations proposées par le service.                    |
-| `binding`     | Concret  | Précise le protocole et le format de communication SOAP.            |
-| `service`     | Concret  | Décrit le service et son adresse d'accès (endpoint).                |
+> **Dans ce TP**, l'annuaire UDDI est facultatif : SoapUI importe directement le WSDL depuis `http://localhost:8085/CalculatriceWS?wsdl`, puis envoie les requêtes (étapes 4 et 5).
 
 ---
 
-## 3. Structure du projet
+## 3. Exemple détaillé : l'opération `somme`
+
+Le même schéma, avec le code du serveur, le contrat WSDL et les messages SOAP échangés pour `somme(5, 3)`.
+
+![Schéma détaillé de l'opération somme](docs/images/02-schema-detaille-somme.png)
+
+---
+
+## 4. Structure d'un message SOAP
+
+Un appel SOAP est un message XML transporté dans une requête HTTP. Il contient une **enveloppe**, un **en-tête** (optionnel) et un **corps** qui décrit l'appel de méthode et ses données.
+
+![Structure d'un message SOAP](docs/images/03-structure-message-soap.png)
+
+---
+
+## 5. Structure du contrat WSDL
+
+Le WSDL est un fichier XML généré automatiquement lors de la publication. Il se compose d'une partie **abstraite** (ce que fait le service) et d'une partie **concrète** (comment et où y accéder).
+
+![Structure du WSDL](docs/images/04-structure-wsdl.png)
+
+| Élément | Section | Rôle |
+|---------|---------|------|
+| `definitions` | — | Élément racine, déclare les espaces de noms |
+| `types` | Abstraite | Types de données échangés (XML Schema / XSD) |
+| `message` | Abstraite | Messages de requête et de réponse |
+| `portType` | Abstraite | Opérations disponibles (entrée / sortie) |
+| `binding` | Concrète | Protocole et format (SOAP, style document/literal) |
+| `service` | Concrète | Adresse (endpoint) où le service est accessible |
+
+---
+
+## 6. Structure du projet et diagramme de classes
 
 Le projet Maven est organisé de manière à séparer le contrat du service, son implémentation et sa publication.
 
-```text
-CalculatriceWS/
+```
+CalculatriceWS
 ├── pom.xml
 ├── README.md
-└── src/
-    └── main/
-        └── java/
-            ├── serveur/
-            │   └── ServeurJWS.java
-            └── service/
-                ├── ICalculatrice.java
-                └── Calculatrice.java
+├── docs
+│   └── images                          # schémas et captures d'écran
+└── src
+    └── main
+        └── java
+            ├── serveur
+            │   └── ServeurJWS.java      # publie le service (Endpoint.publish)
+            └── service
+                ├── ICalculatrice.java   # interface = contrat du service
+                └── Calculatrice.java    # implémentation = code métier
 ```
+
+
 
 ### Rôle des composants
 
@@ -109,38 +136,13 @@ CalculatriceWS/
 
 Cette organisation permet de distinguer la définition des fonctionnalités, leur implémentation et leur mise à disposition aux clients.
 
----
-
 ### Relations entre les classes
 
-```mermaid
-classDiagram
-    class ICalculatrice {
-        <<interface>>
-        +somme(double a, double b) double
-        +multiplication(double a, double b) double
-        +soustraction(double a, double b) double
-        +division(double a, double b) double
-    }
-    class Calculatrice {
-        +somme(double a, double b) double
-        +multiplication(double a, double b) double
-        +soustraction(double a, double b) double
-        +division(double a, double b) double
-    }
-    class ServeurJWS {
-        +main(String[] args) void
-    }
-    Calculatrice ..|> ICalculatrice : implémente
-    ServeurJWS ..> Calculatrice : publie
-```
+![Diagramme de classes](docs/images/05-diagramme-classes.png)
 
-Cette organisation permet de distinguer la définition des fonctionnalités, leur implémentation et leur mise à disposition aux clients.
 
 ---
----
-
-## 4. Dépendances Maven
+### Dépendances Maven
 
 Le projet utilise Maven pour gérer les dépendances nécessaires au développement et à l'exécution du service Web SOAP.
 
@@ -156,25 +158,22 @@ Le fichier `pom.xml` centralise la configuration du projet et facilite la gestio
 
 ![Configuration Maven](docs/images/01-maven-configuration.png)
 
+
 ---
 
-## 5. Implémentation du service Web
+## 7. Implémentation
 
-### 5.1 Interface `ICalculatrice` : définition du contrat
+### 7.1 Interface `ICalculatrice` (le contrat)
 
-L'interface `ICalculatrice` définit les opérations accessibles à travers le service Web.
-
-Elle représente le contrat fonctionnel entre le client et le serveur.
+L'interface `ICalculatrice` définit les opérations accessibles à travers le service Web. Elle représente le contrat fonctionnel entre le client et le serveur.
 
 Les annotations JAX-WS utilisées sont :
 
-| Annotation              | Rôle                                                            |
-| ----------------------- | --------------------------------------------------------------- |
-| `@WebService`           | Déclare l'interface comme contrat d'un service Web.             |
-| `@WebMethod`            | Expose une méthode comme opération du service.                  |
-| `@WebParam(name = "a")` | Définit explicitement le nom du paramètre dans le message SOAP. |
-
-#### Code source
+| Annotation | Rôle |
+|------------|------|
+| `@WebService` | Déclare l'interface comme contrat d'un service SOAP |
+| `@WebMethod` | Expose la méthode comme opération du service |
+| `@WebParam(name = "a")` | Donne un nom explicite au paramètre dans la requête SOAP |
 
 ```java
 package service;
@@ -192,33 +191,26 @@ public interface ICalculatrice {
 
     @WebMethod
     double multiplication(@WebParam(name = "a") double a,
-                         @WebParam(name = "b") double b);
+                          @WebParam(name = "b") double b);
 
     @WebMethod
     double soustraction(@WebParam(name = "a") double a,
-                       @WebParam(name = "b") double b);
+                        @WebParam(name = "b") double b);
 
     @WebMethod
     double division(@WebParam(name = "a") double a,
                     @WebParam(name = "b") double b);
 }
 ```
-
 L'interface définit les signatures des méthodes, sans contenir leur logique de calcul.
 
-![Interface ICalculatrice](docs/images/03-intellij-icalculatrice.png)
+![ICalculatrice dans IntelliJ](docs/images/08-intellij-icalculatrice.png)
 
-### 5.2 Classe `Calculatrice` : implémentation des opérations
+### 7.2 Classe `Calculatrice` : implémentation des opérations
 
-La classe `Calculatrice` implémente l'interface `ICalculatrice`.
+La classe `Calculatrice` implémente l'interface `ICalculatrice`. L'annotation `@WebService(endpointInterface = "service.ICalculatrice")` permet de relier l'implémentation au contrat défini par l'interface.
 
-L'annotation `@WebService(endpointInterface = "service.ICalculatrice")` permet de relier l'implémentation au contrat défini par l'interface.
-
-Chaque méthode réalise une opération mathématique et retourne le résultat correspondant.
-
-La division par zéro est traitée par le déclenchement d'une exception.
-
-#### Code source
+Chaque méthode réalise une opération mathématique et retourne le résultat correspondant. La division par zéro est traitée par le déclenchement d'une exception.
 
 ```java
 package service;
@@ -246,24 +238,18 @@ public class Calculatrice implements ICalculatrice {
     @Override
     public double division(double a, double b) {
         if (b == 0) {
-            throw new IllegalArgumentException(
-                "Division by zero is not allowed."
-            );
+            throw new IllegalArgumentException("Division by zero is not allowed.");
         }
         return a / b;
     }
 }
 ```
 
-![Classe Calculatrice](docs/images/04-intellij-calculatrice.png)
+![Calculatrice dans IntelliJ](docs/images/09-intellij-calculatrice.png)
 
-### 5.3 Classe `ServeurJWS` : publication du service
+### 7.3 Classe `ServeurJWS` : publication du service
 
-La classe `ServeurJWS` permet de démarrer le service Web et de le rendre accessible à travers une adresse HTTP.
-
-La publication est réalisée par la méthode `Endpoint.publish()`.
-
-#### Code source
+La classe `ServeurJWS` permet de démarrer le service Web et de le rendre accessible à travers une adresse HTTP. La publication est réalisée par la méthode `Endpoint.publish()`.
 
 ```java
 package serveur;
@@ -286,6 +272,8 @@ public class ServeurJWS {
 }
 ```
 
+![ServeurJWS dans IntelliJ](docs/images/07-intellij-serveurjws.png)
+
 Lors de l'exécution, le service est publié à l'adresse suivante :
 
 ```text
@@ -298,13 +286,12 @@ Le WSDL est accessible à partir de :
 http://localhost:8085/CalculatriceWS?wsdl
 ```
 
-![Publication du service](docs/images/02-intellij-serveurjws.png)
-
 ---
 
-## 6. Publication du service et génération du WSDL
+## 8. Publication du service et WSDL
 
-### 6.1 Démarrage du service
+
+### 8.1 Démarrage du service
 
 Pour démarrer le service Web :
 
@@ -315,32 +302,63 @@ Pour démarrer le service Web :
 
 La console indique que le service a été publié avec succès et affiche les URL d'accès.
 
-### 6.2 Accès au service
+### 8.2 Accès au service
 
 | Ressource     | URL                                         |
 | ------------- | ------------------------------------------- |
 | Endpoint SOAP | `http://localhost:8085/CalculatriceWS`      |
 | Contrat WSDL  | `http://localhost:8085/CalculatriceWS?wsdl` |
 
-### 6.3 Rôle du WSDL
+### 8.3 Rôle du WSDL
 
-Le WSDL est généré automatiquement par l'environnement JAX-WS.
-
-Il décrit les opérations du service, leurs paramètres, les messages SOAP et l'adresse du endpoint.
+Le WSDL est généré automatiquement par l'environnement JAX-WS (JAX-WS RI 2.3.7). Il décrit les opérations du service, leurs paramètres, les messages SOAP et l'adresse du endpoint.
 
 Le client peut ainsi découvrir les fonctionnalités du service sans avoir accès au code source de la classe `Calculatrice`.
 
 ![WSDL généré](docs/images/09-wsdl.png)
 
+### 8.4 Correspondance entre le code Java et le WSDL
+
+| Dans le code Java                         | Dans le WSDL généré                                              |
+| ----------------------------------------- | ---------------------------------------------------------------- |
+| package `service`                         | `targetNamespace="http://service/"`                              |
+| interface `ICalculatrice`                 | `<portType name="ICalculatrice">`                                |
+| méthode `somme(a, b)`                     | `<operation name="somme">` avec les messages `somme` et `sommeResponse` |
+| classe `Calculatrice` (`ICalculatrice`)   | `<binding name="CalculatricePortBinding" type="tns:ICalculatrice">` |
+| classes d'implémentation du service       | `<definitions ... name="CalculatriceService">`                   |
+| types de `a`, `b` et du résultat          | schéma XSD importé : `http://localhost:8085/CalculatriceWS?xsd=1` |
+
+Extrait du WSDL pour l'opération `somme` :
+
+```xml
+<message name="somme">
+    <part name="parameters" element="tns:somme"/>
+</message>
+<message name="sommeResponse">
+    <part name="parameters" element="tns:sommeResponse"/>
+</message>
+
+<portType name="ICalculatrice">
+    <operation name="somme">
+        <input  wsam:Action="http://service/ICalculatrice/sommeRequest"  message="tns:somme"/>
+        <output wsam:Action="http://service/ICalculatrice/sommeResponse" message="tns:sommeResponse"/>
+    </operation>
+    <!-- division, multiplication, soustraction : même structure -->
+</portType>
+
+<binding name="CalculatricePortBinding" type="tns:ICalculatrice">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
+    ...
+</binding>
+```
+
 ---
 
-## 7. Tests fonctionnels avec SoapUI
+## 9. Tests fonctionnels avec SoapUI
 
-### 7.1 Configuration du projet SoapUI
+### 9.1 Configuration du projet SoapUI
 
-Les tests fonctionnels sont réalisés à l'aide de SoapUI.
-
-La procédure consiste à :
+Les tests fonctionnels sont réalisés à l'aide de SoapUI. La procédure consiste à :
 
 1. Lancer le serveur `ServeurJWS`.
 2. Ouvrir SoapUI.
@@ -358,14 +376,9 @@ http://localhost:8085/CalculatriceWS?wsdl
 
 SoapUI génère automatiquement la structure des requêtes SOAP à partir du contrat WSDL.
 
-### 7.2 Test de l'opération `somme`
+### 9.2 Test de l'opération `somme`
 
-**Paramètres :**
-
-* `a = 5`
-* `b = 3`
-
-**Résultat attendu :** `8.0`
+**Paramètres :** `a = 5`, `b = 3` — **Résultat attendu :** `8.0`
 
 #### Requête SOAP
 
@@ -402,40 +415,25 @@ La réponse contient le résultat de l'addition dans l'élément `return`.
 
 ![Test SoapUI somme](docs/images/05-soapui-somme.png)
 
-### 7.3 Test de l'opération `multiplication`
+### 9.3 Test de l'opération `multiplication`
 
-**Paramètres :**
-
-* `a = 5`
-* `b = 3`
-
-**Résultat attendu :** `15.0`
+**Paramètres :** `a = 5`, `b = 3` — **Résultat attendu :** `15.0`
 
 La requête SOAP utilise l'opération `multiplication`. La réponse contient le résultat du calcul dans l'élément `return`.
 
 ![Test SoapUI multiplication](docs/images/06-soapui-multiplication.png)
 
-### 7.4 Test de l'opération `soustraction`
+### 9.4 Test de l'opération `soustraction`
 
-**Paramètres :**
-
-* `a = 5`
-* `b = 3`
-
-**Résultat attendu :** `2.0`
+**Paramètres :** `a = 5`, `b = 3` — **Résultat attendu :** `2.0`
 
 La requête SOAP utilise l'opération `soustraction`. Le service calcule la différence entre les deux paramètres et retourne le résultat.
 
 ![Test SoapUI soustraction](docs/images/07-soapui-soustraction.png)
 
-### 7.5 Test de l'opération `division`
+### 9.5 Test de l'opération `division`
 
-**Paramètres :**
-
-* `a = 6`
-* `b = 3`
-
-**Résultat attendu :** `2.0`
+**Paramètres :** `a = 6`, `b = 3` — **Résultat attendu :** `2.0`
 
 La requête SOAP utilise l'opération `division`. Le service retourne le quotient des deux paramètres.
 
@@ -443,7 +441,7 @@ La requête SOAP utilise l'opération `division`. Le service retourne le quotien
 
 ---
 
-## 8. Récapitulatif des résultats
+## 10. Récapitulatif des résultats
 
 Les tests réalisés avec SoapUI permettent de vérifier le bon fonctionnement des quatre opérations exposées par le service Web.
 
@@ -454,13 +452,11 @@ Les tests réalisés avec SoapUI permettent de vérifier le bon fonctionnement d
 | `soustraction`   |             5 |             3 |              2.0 |       **2.0** ✅ |            11 ms |           233 octets |
 | `division`       |             6 |             3 |              2.0 |       **2.0** ✅ |            56 ms |           225 octets |
 
-Les résultats obtenus correspondent aux résultats attendus pour les quatre opérations testées.
-
-Les temps de réponse et les tailles des réponses sont ceux relevés lors des tests SoapUI. Ils peuvent varier selon l'environnement d'exécution.
+Les résultats obtenus correspondent aux résultats attendus pour les quatre opérations testées. Les temps de réponse et les tailles des réponses sont ceux relevés lors des tests SoapUI ; ils peuvent varier selon l'environnement d'exécution.
 
 ---
 
-## 9. Évolution du projet
+## 11. Évolution du projet
 
 Le projet a été développé en deux versions :
 
@@ -473,7 +469,7 @@ Cette évolution permet d'illustrer l'enrichissement progressif d'un service Web
 
 ---
 
-## 10. Conclusion
+## 12. Conclusion
 
 Ce TP a permis de mettre en pratique les concepts fondamentaux du développement des services Web SOAP avec Java.
 
@@ -491,4 +487,4 @@ Ce travail constitue une introduction pratique aux architectures orientées serv
 
 **Chayma Bouassida**
 LSI3-GLSI — Faculté des Sciences de Sfax
-Année universitaire 2025-2026
+Année universitaire 2026-2027
